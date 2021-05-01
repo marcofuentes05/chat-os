@@ -1,0 +1,11 @@
+syntax = "proto2";
+
+package chat;
+
+message Message {
+  required string from = 1;
+  required string to = 2;
+  required string body = 3;
+  required string senderState = 4;
+  required string datetime =5;
+}
