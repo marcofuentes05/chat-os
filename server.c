@@ -10,7 +10,14 @@
 // #include <commons.h>
 #define PORT 8080
 
-int main() {
+int main(int argc, char const *argv[]) {
+  printf("%d\n", argc);
+  if (argc <= 1) {
+    printf("No port specified\n");
+    return -1;
+  }
+  int port = atoi(argv[1]);
+  printf("%d\n", port );
   int server_fd, new_socket, valread;
   struct sockaddr_in address;
   int opt = 1;
