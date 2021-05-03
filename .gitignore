@@ -33,3 +33,6 @@
 
 # Private Keys
 *.pem
+
+/server
+/client
