@@ -13,9 +13,19 @@
 char *addr = "18.116.36.10";
 
 int main(int argc, char const *argv[]) {
+  if (argc <= 3) {
+    printf("Lacking info\n");
+    return -1;
+  }
+  char* userName = argv[1];
+  char* serverIP = argv[2];
+  int serverPort = atoi(argv[3]);
+
+  printf("CONNECTED TO: %s\nON PORT: %d\nWELCOME %s\n",serverIP, serverPort, userName);
+
   int sock = 0, valread;
   struct sockaddr_in serv_addr;
-  char *hello = "Hello from client";
+  char *hello = "Hello from client  ";
   char buffer[1024] = {0};
   if ((sock = socket(AF_INET, SOCK_STREAM, 0)) < 0) {
     printf("\n Socket creation error \n");
@@ -23,10 +33,10 @@ int main(int argc, char const *argv[]) {
   }
 
   serv_addr.sin_family = AF_INET;
-  serv_addr.sin_port = htons(PORT);
+  serv_addr.sin_port = htons(serverPort);
 
   // Convert IPv4 and IPv6 addresses from text to binary form
-  if (inet_pton(AF_INET, addr, &serv_addr.sin_addr) <= 0) {
+  if (inet_pton(AF_INET, serverIP, &serv_addr.sin_addr) <= 0) {
     printf("\nInvalid address/ Address not supported \n");
     return -1;
   }
