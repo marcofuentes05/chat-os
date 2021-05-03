@@ -12,7 +12,7 @@
 
 char *addr = "18.116.36.10";
 
-int main(int argc, char const *argv[]) {
+int main(int argc, char *argv[]) {
   if (argc <= 3) {
     printf("Lacking info\n");
     return -1;
@@ -20,12 +20,14 @@ int main(int argc, char const *argv[]) {
   char* userName = argv[1];
   char* serverIP = argv[2];
   int serverPort = atoi(argv[3]);
-
+  char message[37];
   printf("CONNECTED TO: %s\nON PORT: %d\nWELCOME %s\n",serverIP, serverPort, userName);
 
   int sock = 0, valread;
   struct sockaddr_in serv_addr;
-  char *hello = "Hello from client  ";
+  char *hello = "Hello from client, my name is: ";
+  strcat(message, hello);
+  strcat(message, userName);
   char buffer[1024] = {0};
   if ((sock = socket(AF_INET, SOCK_STREAM, 0)) < 0) {
     printf("\n Socket creation error \n");
@@ -46,7 +48,7 @@ int main(int argc, char const *argv[]) {
     return -1;
   }
   
-  send(sock, hello, strlen(hello), 0);
+  send(sock, message, strlen(message), 0);
   printf("Hello message sent\n");
   valread = read(sock, buffer, 1024);
   printf("%s\n", buffer);
