@@ -7,6 +7,7 @@
 #include <netinet/in.h>
 #include <arpa/inet.h>
 #include <pthread.h>
+#include <string>
 // #include <commons.h>
 #define PORT 8080
 #define MAX_CLIENTS 2
@@ -14,9 +15,9 @@
 void* threadFun( void *arg) {
   printf("ENTERING THREAD\n");
   char buffer[1024] = {0};
-  int new_socket = (int)arg;
+  int new_socket = *((int *)(&arg));
   int value = read(new_socket, buffer, 1024);
-  char *hello = "Hello from server";
+  char hello[] = "Hello from server";
   printf("%s\n", buffer);
   send(new_socket, hello, strlen(hello), 0);
   printf("Hello message sent\n");
@@ -64,17 +65,17 @@ int main(int argc, char const *argv[]) {
     exit(EXIT_FAILURE);
   }
 
-  if (listen(server_fd, MAX_CLIENTS) < 0) {
-    perror("listen");
-    exit(EXIT_FAILURE);
-  }
   while (numConnections < MAX_CLIENTS) {
+    if (listen(server_fd, MAX_CLIENTS) < 0) {
+      perror("listen");
+      exit(EXIT_FAILURE);
+    }
     new_socket = accept(server_fd, (struct sockaddr *)&address, (socklen_t *)&addrlen);
     if (new_socket < 0) {
       perror("accept");
       exit(EXIT_FAILURE);
     }
-    int ret = pthread_create(&pool[0], NULL, &threadFun, (void *)new_socket );
+    int ret = pthread_create(&pool[0], NULL, &threadFun, (int *)new_socket );
     if(ret!=0) {
       printf("Error: pthread_create() failed\n");
       exit(EXIT_FAILURE);
@@ -82,9 +83,9 @@ int main(int argc, char const *argv[]) {
     numConnections++;
   }
 
-  for(int i = 0 ; i < MAX_CLIENTS; i++) {
-    pthread_join(pool[i], NULL);
-  }
+  // for(int i = 0 ; i < MAX_CLIENTS; i++) {
+  //   pthread_join(pool[i], NULL);
+  // }
   
   // valread = read(new_socket, buffer, 1024);
   // printf("%s\n", buffer);
