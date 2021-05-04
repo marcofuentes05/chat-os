@@ -10,7 +10,7 @@
 // #include <commons.h>
 #define PORT 8080
 
-char *addr = "18.116.36.10";
+char addr[] = "18.116.36.10";
 
 int main(int argc, char *argv[]) {
   if (argc <= 3) {
@@ -20,13 +20,13 @@ int main(int argc, char *argv[]) {
   char* userName = argv[1];
   char* serverIP = argv[2];
   int serverPort = atoi(argv[3]);
-  char message[37];
+  char message[50] = "Hello from client, my name is: ";
   printf("CONNECTED TO: %s\nON PORT: %d\nWELCOME %s\n",serverIP, serverPort, userName);
 
   int sock = 0, valread;
   struct sockaddr_in serv_addr;
-  char *hello = "Hello from client, my name is: ";
-  strcat(message, hello);
+  // char *hello = "Hello from client, my name is: ";
+  // strcat(message, hello);
   strcat(message, userName);
   char buffer[1024] = {0};
   if ((sock = socket(AF_INET, SOCK_STREAM, 0)) < 0) {
