@@ -15,7 +15,7 @@ char* name;
 char addr[] = "18.116.36.10";
 int sock = 0, valread;
 
-//Esta funciona manejara el envio de mensajes al servidor
+//Esta funcion maneja el envio de mensajes al servidor
 void* send_msg_handler(void* arg){
   char message[LENGTH] = {};
   char buffer[LENGTH + 32] = {};
@@ -26,6 +26,22 @@ void* send_msg_handler(void* arg){
     send(sock, buffer, strlen(buffer),0);
     bzero(message, LENGTH);
     bzero(buffer, LENGTH + 32);
+  }
+}
+//Esta funcion maneja la recepcion de mensajes del servidor
+void* recieve_msg_handler(void* arg){
+  char message[LENGTH] = {};
+  while(1){
+      int receive = recv(sock, message,LENGTH,0);
+      if(receive > 0){
+        printf("%s", message);
+      } else if (receive == 0){
+        break;
+      }
+      else{
+        printf("ERROR RECEIVING DATA FROM SERVER\n");
+      }
+      memset(message, 0, sizeof(message));
   }
 }
 
@@ -77,5 +93,13 @@ int main(int argc, char *argv[]) {
     printf("ERROR: send_msg thread\n");
     return -1;
   }
+
+  pthread_t recieve_msg_thread;
+  int recieve_msg_thread_success;
+  recieve_msg_thread_success = pthread_create(&recieve_msg_thread, NULL, recieve_msg_handler, NULL);
+  if(recieve_msg_thread_success != 0){
+    printf("ERROR: recieve_msg thread\n");
+  }
+
   while(1){}
 }
