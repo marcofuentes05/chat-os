@@ -9,6 +9,7 @@
 #include <pthread.h>
 #include <string>
 #include <queue>
+#include <vector>
 // #include <commons.h>
 #define PORT 8080
 #define MAX_CLIENTS 2
@@ -18,6 +19,7 @@ using namespace std;
 static int numConnections = 0;
 
 static queue<pthread_t> pool;
+static vector<int> sockets; // Podria ser un vector de struct para guardar username y socket fd
 
 pthread_mutex_t mutex = PTHREAD_MUTEX_INITIALIZER;
 
@@ -48,7 +50,7 @@ void* threadFun( void *arg) {
   // printf("NUMCONNECTIONS--: %d\n", numConnections);
   pool.push(thId);
   pthread_mutex_unlock(&mutex);
-
+  close(new_socket);
   // printf("EXITING THREAD\n");
   pthread_exit(NULL);
   // return NULL;
@@ -102,24 +104,26 @@ int main(int argc, char const *argv[]) {
       perror("listen");
       exit(EXIT_FAILURE);
     }
-    new_socket = accept(server_fd, (struct sockaddr *)&address, (socklen_t *)&addrlen);
-    if (new_socket < 0) {
-      perror("accept");
-      exit(EXIT_FAILURE);
+    if (numConnections <= MAX_CLIENTS) {
+      new_socket = accept(server_fd, (struct sockaddr *)&address, (socklen_t *)&addrlen);
+      if (new_socket < 0) {
+        perror("accept");
+        exit(EXIT_FAILURE);
+      }
+      pthread_mutex_lock(&mutex);
+      pthread_t threadId = pool.front();
+      pool.pop();
+      pthread_mutex_unlock(&mutex);
+      int ret = pthread_create(&threadId, NULL, &threadFun, (int *)new_socket );
+      // printf("THREAD[0] ID: %ld\n", threadId);
+      if(ret!=0) {
+        printf("Error: pthread_create() failed\n");
+        exit(EXIT_FAILURE);
+      }
+      pthread_mutex_lock(&mutex);
+      numConnections++;
+      pthread_mutex_unlock(&mutex);
     }
-    pthread_mutex_lock(&mutex);
-    pthread_t threadId = pool.front();
-    pool.pop();
-    pthread_mutex_unlock(&mutex);
-    int ret = pthread_create(&threadId, NULL, &threadFun, (int *)new_socket );
-    // printf("THREAD[0] ID: %ld\n", threadId);
-    if(ret!=0) {
-      printf("Error: pthread_create() failed\n");
-      exit(EXIT_FAILURE);
-    }
-    pthread_mutex_lock(&mutex);
-    numConnections++;
-    pthread_mutex_unlock(&mutex);
   }
 
   // for(int i = 0 ; i < MAX_CLIENTS; i++) {
