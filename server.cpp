@@ -8,23 +8,50 @@
 #include <arpa/inet.h>
 #include <pthread.h>
 #include <string>
+#include <queue>
 // #include <commons.h>
 #define PORT 8080
 #define MAX_CLIENTS 2
 
-void* threadFun( void *arg) {
-  printf("ENTERING THREAD\n");
-  char buffer[1024] = {0};
-  int new_socket = *((int *)(&arg));
-  int value = read(new_socket, buffer, 1024);
-  char hello[] = "Hello from server";
-  printf("%s\n", buffer);
-  send(new_socket, hello, strlen(hello), 0);
-  printf("Hello message sent\n");
+using namespace std;
 
-  printf("EXITING THREAD\n");
+static int numConnections = 0;
+
+static queue<pthread_t> pool;
+
+pthread_mutex_t mutex = PTHREAD_MUTEX_INITIALIZER;
+
+void* threadFun( void *arg) {
+  // printf("ENTERING THREAD\n");
+  int new_socket = *((int *)(&arg));
+  // printf("SOCKET INT: %d\n", new_socket);
+  pthread_t thId = pthread_self();
+  // printf("THREAD ID: %ld\n",thId);
+  bool sigue = true;
+  char buffer[1024] = {0};
+  for (; ;) {
+    int value = read(new_socket, buffer, 1024);
+    if (buffer[0] == 0) {
+      // sigue = false;
+      break;
+    }
+    printf("Socket ID: %d\t%s\n", new_socket, buffer);
+    // Clear buffer
+    memset(buffer, 0, sizeof(buffer));
+    
+    char hello[] = "Server confirma de recibido";
+    send(new_socket, hello, strlen(hello), 0);
+    // printf("Hello message sent\n");
+  }
+  pthread_mutex_lock(&mutex);
+  numConnections--;
+  // printf("NUMCONNECTIONS--: %d\n", numConnections);
+  pool.push(thId);
+  pthread_mutex_unlock(&mutex);
+
+  // printf("EXITING THREAD\n");
   pthread_exit(NULL);
-  return NULL;
+  // return NULL;
 }
 
 int main(int argc, char const *argv[]) {
@@ -53,8 +80,13 @@ int main(int argc, char const *argv[]) {
   }
 
   // Thread pool
-  pthread_t pool[MAX_CLIENTS];
-  int numConnections = 0;
+  // pthread_t pool[MAX_CLIENTS];
+  pthread_mutex_lock(&mutex);
+    for (int i = 0 ; i < MAX_CLIENTS; i++){
+      pthread_t temp;
+      pool.push(temp);
+    }
+  pthread_mutex_unlock(&mutex);
   address.sin_family = AF_INET;
   address.sin_addr.s_addr = INADDR_ANY;
   address.sin_port = htons(PORT);
@@ -65,7 +97,7 @@ int main(int argc, char const *argv[]) {
     exit(EXIT_FAILURE);
   }
 
-  while (numConnections < MAX_CLIENTS) {
+  while (true) {
     if (listen(server_fd, MAX_CLIENTS) < 0) {
       perror("listen");
       exit(EXIT_FAILURE);
@@ -75,22 +107,28 @@ int main(int argc, char const *argv[]) {
       perror("accept");
       exit(EXIT_FAILURE);
     }
-    int ret = pthread_create(&pool[0], NULL, &threadFun, (int *)new_socket );
+    pthread_mutex_lock(&mutex);
+    pthread_t threadId = pool.front();
+    pool.pop();
+    pthread_mutex_unlock(&mutex);
+    int ret = pthread_create(&threadId, NULL, &threadFun, (int *)new_socket );
+    // printf("THREAD[0] ID: %ld\n", threadId);
     if(ret!=0) {
       printf("Error: pthread_create() failed\n");
       exit(EXIT_FAILURE);
     }
+    pthread_mutex_lock(&mutex);
     numConnections++;
+    pthread_mutex_unlock(&mutex);
   }
 
   // for(int i = 0 ; i < MAX_CLIENTS; i++) {
   //   pthread_join(pool[i], NULL);
   // }
-  
-  // valread = read(new_socket, buffer, 1024);
-  // printf("%s\n", buffer);
-  // send(new_socket, hello, strlen(hello), 0);
-  // printf("Hello message sent\n");
-
-  return 0;
+  while(!pool.empty()) {
+    pthread_join(pool.front(), NULL);
+    pool.pop();
+  }
+  pthread_mutex_destroy(&mutex);
+  pthread_exit(NULL);
 }
