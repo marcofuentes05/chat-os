@@ -12,20 +12,49 @@
 #include <vector>
 // #include <commons.h>
 #define PORT 8080
-#define MAX_CLIENTS 2
+#define MAX_CLIENTS 5
 
 using namespace std;
+struct user {
+  string name;
+  int socket;
+};
 
 static int numConnections = 0;
 
 static queue<pthread_t> pool;
-static vector<int> sockets; // Podria ser un vector de struct para guardar username y socket fd
+static vector<user> users;
+
 
 pthread_mutex_t mutex = PTHREAD_MUTEX_INITIALIZER;
 
+void broadcast(char message[]) {
+  for(auto usr: users) {
+    if (usr.socket != 0) {
+      // printf("USR SOCKET: %d\n", usr.socket);
+      send(usr.socket, message, strlen(message), 0);
+    }
+  }
+}
+
+int sendTo(string user, char message[]) {
+  for( auto usr: users) {
+    if (usr.name == user) {
+      send(usr.socket, message, strlen(message), 0);
+      return 1;
+    }
+  }
+  return 0;
+}
+
 void* threadFun( void *arg) {
-  // printf("ENTERING THREAD\n");
   int new_socket = *((int *)(&arg));
+  user newUser;
+  newUser.socket = new_socket;
+  newUser.name = "test";
+  pthread_mutex_lock(&mutex);
+  users.push_back(newUser);
+  pthread_mutex_unlock(&mutex);
   // printf("SOCKET INT: %d\n", new_socket);
   pthread_t thId = pthread_self();
   // printf("THREAD ID: %ld\n",thId);
@@ -38,16 +67,22 @@ void* threadFun( void *arg) {
       break;
     }
     printf("Socket ID: %d\t%s\n", new_socket, buffer);
+    broadcast(buffer);
     // Clear buffer
-    memset(buffer, 0, sizeof(buffer));
+    memset(buffer, 0, 1024);
     
     char hello[] = "Server confirma de recibido";
-    send(new_socket, hello, strlen(hello), 0);
+    // send(new_socket, hello, strlen(hello), 0);
     // printf("Hello message sent\n");
   }
   pthread_mutex_lock(&mutex);
   numConnections--;
   // printf("NUMCONNECTIONS--: %d\n", numConnections);
+  for(int i = 0 ; i < users.size(); i++) {
+    if (users.at(i).socket == new_socket) {
+      users.at(i).socket = 0;
+    }
+  }
   pool.push(thId);
   pthread_mutex_unlock(&mutex);
   close(new_socket);
