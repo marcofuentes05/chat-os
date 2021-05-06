@@ -13,6 +13,7 @@
 // #include <commons.h>
 #define PORT 8080
 #define MAX_CLIENTS 5
+#define BUFFER_SIZE 1024
 
 using namespace std;
 struct user {
@@ -55,29 +56,21 @@ void* threadFun( void *arg) {
   pthread_mutex_lock(&mutex);
   users.push_back(newUser);
   pthread_mutex_unlock(&mutex);
-  // printf("SOCKET INT: %d\n", new_socket);
   pthread_t thId = pthread_self();
-  // printf("THREAD ID: %ld\n",thId);
   bool sigue = true;
-  char buffer[1024] = {0};
+  char buffer[BUFFER_SIZE] = {0};
   for (; ;) {
-    int value = read(new_socket, buffer, 1024);
+    int value = read(new_socket, buffer, BUFFER_SIZE);
     if (buffer[0] == 0) {
-      // sigue = false;
       break;
     }
     printf("Socket ID: %d\t%s\n", new_socket, buffer);
     broadcast(buffer);
     // Clear buffer
-    memset(buffer, 0, 1024);
-    
-    char hello[] = "Server confirma de recibido";
-    // send(new_socket, hello, strlen(hello), 0);
-    // printf("Hello message sent\n");
+    memset(buffer, 0, BUFFER_SIZE);
   }
   pthread_mutex_lock(&mutex);
   numConnections--;
-  // printf("NUMCONNECTIONS--: %d\n", numConnections);
   for(int i = 0 ; i < users.size(); i++) {
     if (users.at(i).socket == new_socket) {
       users.at(i).socket = 0;
@@ -86,9 +79,7 @@ void* threadFun( void *arg) {
   pool.push(thId);
   pthread_mutex_unlock(&mutex);
   close(new_socket);
-  // printf("EXITING THREAD\n");
   pthread_exit(NULL);
-  // return NULL;
 }
 
 int main(int argc, char const *argv[]) {
@@ -102,7 +93,7 @@ int main(int argc, char const *argv[]) {
   struct sockaddr_in address;
   int opt = 1;
   int addrlen = sizeof(address);
-  char buffer[1024] = {0};
+  char buffer[BUFFER_SIZE] = {0};
 
   // Creating socket file descriptor
   if ((server_fd = socket(AF_INET, SOCK_STREAM, 0)) == 0) {
