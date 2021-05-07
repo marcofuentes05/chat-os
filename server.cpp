@@ -10,7 +10,8 @@
 #include <string>
 #include <queue>
 #include <vector>
-// #include <commons.h>
+// #include "petition.pb.h"
+
 #define PORT 8080
 #define MAX_CLIENTS 5
 #define BUFFER_SIZE 1024
@@ -40,7 +41,7 @@ void broadcast(char message[]) {
 
 int sendTo(string user, char message[]) {
   for( auto usr: users) {
-    if (usr.name == user) {
+    if (usr.name == user && usr.socket != 0) {
       send(usr.socket, message, strlen(message), 0);
       return 1;
     }
@@ -52,14 +53,13 @@ void* threadFun( void *arg) {
   int new_socket = *((int *)(&arg));
   user newUser;
   newUser.socket = new_socket;
-  newUser.name = "test";
+  newUser.name = "test"; // del protocolo
   pthread_mutex_lock(&mutex);
   users.push_back(newUser);
   pthread_mutex_unlock(&mutex);
   pthread_t thId = pthread_self();
-  bool sigue = true;
   char buffer[BUFFER_SIZE] = {0};
-  for (; ;) {
+  for (;;) {
     int value = read(new_socket, buffer, BUFFER_SIZE);
     if (buffer[0] == 0) {
       break;
@@ -83,6 +83,8 @@ void* threadFun( void *arg) {
 }
 
 int main(int argc, char const *argv[]) {
+  // GOOGLE_PROTOBUF_VERIFY_VERSION;
+  // chat::ClientPetition client_petition;
   if (argc <= 1) {
     printf("No port specified\n");
     return -1;

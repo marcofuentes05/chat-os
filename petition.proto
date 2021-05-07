@@ -1,0 +1,38 @@
+syntax = "proto3";
+
+package chat;
+
+message ClientPetition {
+    optional int32 option = 1;
+
+    // ##### Registro #####
+    optional string username = 2;
+    optional string ip = 3;
+
+    // ##### Usuarios conectados #####
+    // optional string username = 4;   // (username || everyone)
+
+    // ##### Chat #####
+    // optional string username = 5;
+    optional string message = 6;
+    optional string sent_to = 7;    // (username || broadcast)
+
+    // ##### Cambiar estado #####
+    optional string new_status = 8;
+    // optional string username = 9;   // ????????
+}
+
+message ServerResponse {
+    optional int32 code = 1;
+    optional string server_message = 2;
+
+    // ##### Mensaje de un usuario #####
+    optional string username = 3;
+    optional string user_message = 4;
+}
+
+// if ClientMessage.option == 1:
+//     ClientMessage.username
+//     ClientMessage.ip
+// if ClientMessage.option == 2:
+//     ClientMessage.username
