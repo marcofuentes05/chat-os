@@ -47,7 +47,7 @@ void removeUser (string name, int socket) {
   printUsers();
 }
 
-pthread_mutex_t mutex = PTHREAD_MUTEX_INITIALIZER;
+pthread_mutex_t mutex1 = PTHREAD_MUTEX_INITIALIZER;
 
 bool usernameAvailable(char username[]) {
   for (auto usr : users) {
@@ -95,19 +95,19 @@ void* threadFun( void *arg) {
   if (!usernameAvailable(newUserName)){
     removeUser(newUserName, new_socket);
     sendTo(new_socket, "ERROR - USUARIO EXISTENTE");
-    pthread_mutex_lock(&mutex);
+    pthread_mutex_lock(&mutex1);
     numConnections--;
     pool.push(thId);
-    pthread_mutex_unlock(&mutex);
+    pthread_mutex_unlock(&mutex1);
     printf("Closing socket %d...\n", new_socket);
     close(new_socket);
     printf("Socket %d gone\n", new_socket);
     pthread_exit(NULL);
   }
   
-  pthread_mutex_lock(&mutex);
+  pthread_mutex_lock(&mutex1);
   users.push_back(newUser);
-  pthread_mutex_unlock(&mutex);
+  pthread_mutex_unlock(&mutex1);
   char buffer[BUFFER_SIZE] = {0};
   for (;;) {
     int value = read(new_socket, buffer, BUFFER_SIZE);
@@ -119,7 +119,7 @@ void* threadFun( void *arg) {
     // Clear buffer
     memset(buffer, 0, BUFFER_SIZE);
   }
-  pthread_mutex_lock(&mutex);
+  pthread_mutex_lock(&mutex1);
   numConnections--;
   for(int i = 0 ; i < users.size(); i++) {
     if (users.at(i).socket == new_socket) {
@@ -127,7 +127,7 @@ void* threadFun( void *arg) {
     }
   }
   pool.push(thId);
-  pthread_mutex_unlock(&mutex);
+  pthread_mutex_unlock(&mutex1);
   printf("Closing socket %d...\n", new_socket);
   close(new_socket);
   printf("Socket %d gone\n", new_socket);
@@ -163,12 +163,12 @@ int main(int argc, char const *argv[]) {
 
   // Thread pool
   // pthread_t pool[MAX_CLIENTS];
-  pthread_mutex_lock(&mutex);
+  pthread_mutex_lock(&mutex1);
     for (int i = 0 ; i < MAX_CLIENTS; i++){
       pthread_t temp;
       pool.push(temp);
     }
-  pthread_mutex_unlock(&mutex);
+  pthread_mutex_unlock(&mutex1);
   address.sin_family = AF_INET;
   address.sin_addr.s_addr = INADDR_ANY;
   address.sin_port = htons(PORT);
@@ -190,19 +190,19 @@ int main(int argc, char const *argv[]) {
         perror("accept");
         exit(EXIT_FAILURE);
       }
-      pthread_mutex_lock(&mutex);
+      pthread_mutex_lock(&mutex1);
       pthread_t threadId = pool.front();
       pool.pop();
-      pthread_mutex_unlock(&mutex);
+      pthread_mutex_unlock(&mutex1);
       int ret = pthread_create(&threadId, NULL, &threadFun, (int *)new_socket );
       // printf("THREAD[0] ID: %ld\n", threadId);
       if(ret!=0) {
         printf("Error: pthread_create() failed\n");
         exit(EXIT_FAILURE);
       }
-      pthread_mutex_lock(&mutex);
+      pthread_mutex_lock(&mutex1);
       numConnections++;
-      pthread_mutex_unlock(&mutex);
+      pthread_mutex_unlock(&mutex1);
     }
   }
 
@@ -213,6 +213,6 @@ int main(int argc, char const *argv[]) {
     pthread_join(pool.front(), NULL);
     pool.pop();
   }
-  pthread_mutex_destroy(&mutex);
+  pthread_mutex_destroy(&mutex1);
   pthread_exit(NULL);
 }
