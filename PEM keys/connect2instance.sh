@@ -1,0 +1,1 @@
+ssh -i  instance-medium-chat.pem ubuntu@3.15.239.221
