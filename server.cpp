@@ -116,9 +116,10 @@ void* threadFun( void *arg) {
       break;
     }
 
-    const chat::ClientPetition request;
-    request.ParseFromString(&buffer);
-    string debug = request.DebugString();
+    const chat::ClientPetition *request;
+    string bufferStr(buffer);
+    ParseFromString(bufferStr, *request);
+    string debug = request->DebugString();
     printf(debug);
     
     printf("Socket ID: %d\t%s\n", new_socket, buffer);
