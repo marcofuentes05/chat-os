@@ -117,7 +117,7 @@ void* threadFun( void *arg) {
     }
 
     const chat::ClientPetition request;
-    request.parseFromString(buffer);
+    request.ParseFromString(buffer);
     string debug = request.DebugString();
     printf(debug);
     
