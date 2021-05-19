@@ -17,6 +17,8 @@
 #define BUFFER_SIZE 1024
 
 using namespace std;
+using namespace google::protobuf;
+
 struct user {
   string name;
   int socket;
@@ -113,6 +115,12 @@ void* threadFun( void *arg) {
     if (buffer[0] == 0) {
       break;
     }
+
+    const chat::ClientPetition request;
+    request.parseFromString(buffer);
+    string debug = request.DebugString();
+    printf(debug);
+    
     printf("Socket ID: %d\t%s\n", new_socket, buffer);
     broadcast(buffer, newUser.socket);
     // Clear buffer
@@ -215,4 +223,7 @@ int main(int argc, char const *argv[]) {
   }
   pthread_mutex_destroy(&mutex1);
   pthread_exit(NULL);
+
+  ShutdownProtobufLibrary();
+
 }
