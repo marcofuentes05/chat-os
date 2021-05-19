@@ -27,13 +27,38 @@ static int numConnections = 0;
 static queue<pthread_t> pool;
 static vector<user> users;
 
+void printUsers() {
+  for(auto usr : users) {
+    printf("Name: %s\tSocket: %d\n", usr.name, usr.socket);
+  }
+}
+
+void removeUser (string name, int socket) {
+  printUsers();
+  for (int i = 0 ; i < users.size(); i++) {
+    user usr = users.at(i);
+    if (usr.name == name && usr.socket == socket) {
+      users.erase(users.begin() + i);
+      break;
+    }
+  }
+  printUsers();
+}
 
 pthread_mutex_t mutex = PTHREAD_MUTEX_INITIALIZER;
 
-void broadcast(char message[]) {
+bool usernameAvailable(char username[]) {
+  for (auto usr : users) {
+    if (usr.name == username) {
+      return false;
+    }
+  }
+  return true;
+}
+
+void broadcast(char message[], int senderSocket) {
   for(auto usr: users) {
-    if (usr.socket != 0) {
-      // printf("USR SOCKET: %d\n", usr.socket);
+    if (usr.socket != 0 && usr.socket != senderSocket) {
       send(usr.socket, message, strlen(message), 0);
     }
   }
@@ -49,15 +74,38 @@ int sendTo(string user, char message[]) {
   return 0;
 }
 
+void sendTo(int socket, char message[]) {
+  send(socket, message, strlen(message), 0);
+}
+
 void* threadFun( void *arg) {
+  pthread_t thId = pthread_self();
   int new_socket = *((int *)(&arg));
   user newUser;
   newUser.socket = new_socket;
   newUser.name = "test"; // del protocolo
+
+  // De string a char[]
+  char newUserName[newUser.name.length() + 1];
+  strcpy(newUserName, newUser.name.c_str());
+
+  // Rechazar la conexión si el usuario ya existe
+  if (!usernameAvailable(newUserName)){
+    removeUser(newUserName, new_socket);
+    sendTo(new_socket, "ERROR - USUARIO EXISTENTE");
+    pthread_mutex_lock(&mutex);
+    numConnections--;
+    pool.push(thId);
+    pthread_mutex_unlock(&mutex);
+    printf("Closing socket %d...\n", new_socket);
+    close(new_socket);
+    printf("Socket %d gone\n", new_socket);
+    pthread_exit(NULL);
+  }
+  
   pthread_mutex_lock(&mutex);
   users.push_back(newUser);
   pthread_mutex_unlock(&mutex);
-  pthread_t thId = pthread_self();
   char buffer[BUFFER_SIZE] = {0};
   for (;;) {
     int value = read(new_socket, buffer, BUFFER_SIZE);
@@ -65,7 +113,7 @@ void* threadFun( void *arg) {
       break;
     }
     printf("Socket ID: %d\t%s\n", new_socket, buffer);
-    broadcast(buffer);
+    broadcast(buffer, newUser.socket);
     // Clear buffer
     memset(buffer, 0, BUFFER_SIZE);
   }
@@ -78,7 +126,9 @@ void* threadFun( void *arg) {
   }
   pool.push(thId);
   pthread_mutex_unlock(&mutex);
+  printf("Closing socket %d...\n", new_socket);
   close(new_socket);
+  printf("Socket %d gone\n", new_socket);
   pthread_exit(NULL);
 }
 
