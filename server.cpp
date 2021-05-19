@@ -26,6 +26,7 @@ static int numConnections = 0;
 
 static queue<pthread_t> pool;
 static vector<user> users;
+pthread_mutex_t mutex1 = PTHREAD_MUTEX_INITIALIZER;
 
 void printUsers() {
   for(auto usr : users) {
@@ -47,11 +48,9 @@ void removeUser (string name, int socket) {
   printUsers();
 }
 
-pthread_mutex_t mutex1 = PTHREAD_MUTEX_INITIALIZER;
-
 bool usernameAvailable(char username[]) {
   for (auto usr : users) {
-    if (usr.name == username) {
+    if (usr.name == username) { //TODO IP
       return false;
     }
   }
@@ -93,7 +92,7 @@ void* threadFun( void *arg) {
 
   // Rechazar la conexión si el usuario ya existe
   if (!usernameAvailable(newUserName)){
-    removeUser(newUserName, new_socket);
+    removeUser(newUserName, new_socket); //TODO REVISAR ESTE ORDEN
     sendTo(new_socket, "ERROR - USUARIO EXISTENTE");
     pthread_mutex_lock(&mutex1);
     numConnections--;
@@ -121,11 +120,12 @@ void* threadFun( void *arg) {
   }
   pthread_mutex_lock(&mutex1);
   numConnections--;
-  for(int i = 0 ; i < users.size(); i++) {
-    if (users.at(i).socket == new_socket) {
-      users.at(i).socket = 0;
-    }
-  }
+  // for(int i = 0 ; i < users.size(); i++) {
+  //   if (users.at(i).socket == new_socket) {
+  //     users.at(i).socket = 0;
+  //   }
+  // }
+  removeUser(newUserName, new_socket);
   pool.push(thId);
   pthread_mutex_unlock(&mutex1);
   printf("Closing socket %d...\n", new_socket);
