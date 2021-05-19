@@ -10,7 +10,7 @@
 #include <string>
 #include <queue>
 #include <vector>
-// #include "petition.pb.h"
+#include "new.pb.h"
 
 #define PORT 8080
 #define MAX_CLIENTS 5
@@ -135,8 +135,8 @@ void* threadFun( void *arg) {
 }
 
 int main(int argc, char const *argv[]) {
-  // GOOGLE_PROTOBUF_VERIFY_VERSION;
-  // chat::ClientPetition client_petition;
+  GOOGLE_PROTOBUF_VERIFY_VERSION;
+  chat::ClientPetition client_petition;
   if (argc <= 1) {
     printf("No port specified\n");
     return -1;
