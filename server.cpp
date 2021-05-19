@@ -116,12 +116,16 @@ void* threadFun( void *arg) {
       break;
     }
 
-    const chat::ClientPetition request;
+    chat::ClientPetition request;
     string bufferStr(buffer);
     request.ParseFromString(bufferStr);
     string debug = request.DebugString();
-    printf(debug);
-    
+    char debugChar[debug.size() + 1];
+    strcpy(debugChar, debug.c_str());
+//    printf("RECEIVED CODE: %d ",request.code());
+    printf("RECEIVED OPTION: %d", request.option());
+    printf("%s\n",debug);
+
     printf("Socket ID: %d\t%s\n", new_socket, buffer);
     broadcast(buffer, newUser.socket);
     // Clear buffer
