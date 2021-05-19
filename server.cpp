@@ -29,7 +29,9 @@ static vector<user> users;
 
 void printUsers() {
   for(auto usr : users) {
-    printf("Name: %s\tSocket: %d\n", usr.name, usr.socket);
+    char myArray[usr.name.size() + 1]; //as 1 char space for null is also required
+    strcpy(myArray, usr.name.c_str());
+    printf("Name: %s\tSocket: %d\n", myArray, usr.socket);
   }
 }
 
