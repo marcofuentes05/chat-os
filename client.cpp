@@ -26,29 +26,34 @@ void* send_msg_handler(void* arg){
   char buffer[LENGTH] = {};
 
   while(1){
-    string messageserializer;
+    string petitionserializer;
     cin >> userInput;
     char firtschar = userInput[0];
+    chat::MessageCommunication *message = new chat::MessageCommunication(); 
     //Direct Message
     if(firtschar == '@'){
+      chat::ClientPetition *petition = new chat::ClientPetition();
       string recipient = userInput.substr(1, userInput.find(" "));
-      chat::MessageCommunication *message = new chat::MessageCommunication(); 
       message->set_message(userInput);
       message->set_sender(name);
       message->set_recipient(recipient);
-      message->SerializeToString(&messageserializer);
-      strcpy(buffer,messageserializer.c_str());
-      send(sock, buffer, messageserializer.size() +1 ,0);
+      petition->set_option(4);
+      petition->set_allocated_messagecommunication(message);
+      petition->SerializeToString(&petitionserializer);
+      strcpy(buffer,petitionserializer.c_str());
+      send(sock, buffer, petitionserializer.size() +1 ,0);
     }
     //Broadcast
-    else{
-      chat::MessageCommunication *message = new chat::MessageCommunication(); 
+    else{ 
+      chat::ClientPetition *petition = new chat::ClientPetition();
       message->set_message(userInput);
       message->set_sender(name);
       message->set_recipient("everyone");
-      message->SerializeToString(&messageserializer);
-      strcpy(buffer,messageserializer.c_str());
-      send(sock, buffer, messageserializer.size() +1 ,0);
+      petition->set_option(4);
+      petition->set_allocated_messagecommunication(message);
+      petition->SerializeToString(&petitionserializer);
+      strcpy(buffer,petitionserializer.c_str());
+      send(sock, buffer, petitionserializer.size() +1 ,0);
     }
   }
 }
