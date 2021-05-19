@@ -8,6 +8,10 @@
 #include <arpa/inet.h>
 #include <pthread.h>
 // #include <commons.h>
+#include "new.pb.h"
+using namespace std;
+using namespace google::protobuf;
+
 #define PORT 8080
 #define LENGTH 2048
 
@@ -17,15 +21,35 @@ int sock = 0, valread;
 
 //Esta funcion maneja el envio de mensajes al servidor
 void* send_msg_handler(void* arg){
-  char message[LENGTH] = {};
-  char buffer[LENGTH + 32] = {};
+  GOOGLE_PROTOBUF_VERIFY_VERSION;
+  string userInput;
+  char buffer[LENGTH] = {};
 
   while(1){
-    fgets(message, LENGTH, stdin);
-    sprintf(buffer, "%s: %s\n", name, message);
-    send(sock, buffer, strlen(buffer),0);
-    bzero(message, LENGTH);
-    bzero(buffer, LENGTH + 32);
+    string messageserializer;
+    cin >> userInput;
+    char firtschar = userInput[0];
+    //Direct Message
+    if(firtschar == '@'){
+      string recipient = userInput.substr(1, userInput.find(" "));
+      chat::MessageCommunication *message = new chat::MessageCommunication(); 
+      message->set_message(userInput);
+      message->set_sender(name);
+      message->set_recipient(recipient);
+      message->SerializeToString(&messageserializer);
+      strcpy(buffer,messageserializer.c_str());
+      send(sock, buffer, messageserializer.size() +1 ,0);
+    }
+    //Broadcast
+    else{
+      chat::MessageCommunication *message = new chat::MessageCommunication(); 
+      message->set_message(userInput);
+      message->set_sender(name);
+      message->set_recipient("everyone");
+      message->SerializeToString(&messageserializer);
+      strcpy(buffer,messageserializer.c_str());
+      send(sock, buffer, messageserializer.size() +1 ,0);
+    }
   }
 }
 //Esta funcion maneja la recepcion de mensajes del servidor
@@ -50,6 +74,7 @@ int main(int argc, char *argv[]) {
     printf("Lacking info\n");
     return -1;
   }
+  GOOGLE_PROTOBUF_VERIFY_VERSION;
   char* userName = argv[1];
   name = userName;
   char* serverIP = argv[2];
