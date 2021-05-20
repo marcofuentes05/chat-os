@@ -181,11 +181,11 @@ void* threadFun( void *arg) {
       }
       case 4:{
         string recipient = request.mutable_messagecommunication()->recipient();
-        printf("recipient: %s\n", recipient);
+        printf("recipient: %s\n", string2charPointer(recipient));
         string message = request.mutable_messagecommunication()->message();
-        printf("message: %s\n", message);
+        printf("message: %s\n", string2charPointer(message));
         string sender = request.mutable_messagecommunication()->sender();
-        printf("sender: %s\n", sender);
+        printf("sender: %s\n", string2charPointer(sender));
         // message = sender + " para " + recipient + ": " + message;
         if(recipient=="everyone"){
           broadcast(message, new_socket, sender);
