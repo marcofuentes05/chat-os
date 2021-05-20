@@ -169,11 +169,13 @@ void* threadFun( void *arg) {
       switch (option) {
       case 1:
         printf("OPTION 1\n");
+        break;
       case 2:
         printf("OPTION 2\n");
-
+        break;
       case 3:
         printf("OPTION 3\n");
+        break;
       case 4:
         chat::MessageCommunication messageRequest;
         string recipient = request.mutable_messagecommunication()->recipient();
@@ -185,6 +187,7 @@ void* threadFun( void *arg) {
         } else {
           sendTo(recipient, string2charPointer(message), sender);
         }
+        break;
       case 5:
         string user = request.mutable_users()->user();
         chat::UserInfo *usrInfo = new chat::UserInfo();
@@ -205,6 +208,7 @@ void* threadFun( void *arg) {
         response->SerializeToString(&responseSerialized);
         strcpy(buffer, responseSerialized.c_str());
         send(new_socket, buffer, responseSerialized.size() + 1, 0);
+        break;
       }
 
       // broadcast(buffer, newUser.socket, newUser.name);
