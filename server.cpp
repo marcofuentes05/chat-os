@@ -32,12 +32,6 @@ static queue<pthread_t> pool;
 static vector<user> users;
 pthread_mutex_t mutex1 = PTHREAD_MUTEX_INITIALIZER;
 
-char* string2charPointer(string message) {
-  char debugChar[message.size() + 1];
-  strcpy(debugChar, message.c_str());
-  return debugChar;
-}
-
 void printUsers() {
   for(auto usr : users) {
     char myArray[usr.name.size() + 1]; //as 1 char space for null is also required
@@ -141,8 +135,13 @@ void* threadFun( void *arg) {
     // Rechazar la conexión si el usuario ya existe
     if (!usernameAvailable(newUserName)){
       removeUser(newUserName, new_socket); //TODO REVISAR ESTE ORDEN
-      char *err = "ERROR - USUARIO EXISTENTE";
-      sendTo(new_socket, err);
+      string err = "ERROR - USUARIO EXISTENTE";
+
+      char errChar[err.size() + 1];
+      strcpy(errChar, err.c_str());
+
+
+      sendTo(new_socket, errChar);
       pthread_mutex_lock(&mutex1);
       numConnections--;
       pool.push(thId);
