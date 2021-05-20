@@ -199,7 +199,17 @@ void* threadFun( void *arg) {
         if(recipient=="everyone"){
           broadcast(message, new_socket, sender);
         } else {
-          sendTo(recipient, message, sender);
+          int indicator = sendTo(recipient, message, sender);
+          if (indicator == 0) {
+            chat::ServerResponse *response = new chat::ServerResponse();
+            response->set_code(500);
+            response->set_servermessage("Usuario inexistente");
+            string responseSerialized;
+            response->SerializeToString(&responseSerialized);
+            char tempBuffer[BUFFER_SIZE] = {0};
+            strcpy(tempBuffer, responseSerialized.c_str());
+            send(new_socket, tempBuffer, responseSerialized.size() + 1, 0);
+          }
         }
         break;
       }
