@@ -121,6 +121,8 @@ void* threadFun( void *arg) {
   chat::ClientPetition tempPetition;
   string tempBufferStr(tempBuffer);
   tempPetition.ParseFromString(tempBufferStr);
+  string firstDebug = tempPetition.DebugString();
+  printf("debug: %s\n", string2charPointer(firstDebug));
   if (tempPetition.option() == 1) {
     user newUser;
     newUser.name = tempPetition.mutable_registration()->username();
@@ -159,7 +161,7 @@ void* threadFun( void *arg) {
       string bufferStr(buffer);
       request.ParseFromString(bufferStr);
       string debug = request.DebugString();
-      printf("%s", string2charPointer(debug));
+      printf("%s\n", string2charPointer(debug));
       int option = request.option();
       printf("RECEIVED OPTION: %u\n", option);
 
