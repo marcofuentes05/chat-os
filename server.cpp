@@ -180,10 +180,12 @@ void* threadFun( void *arg) {
         break;
       }
       case 4:{
-        chat::MessageCommunication messageRequest;
         string recipient = request.mutable_messagecommunication()->recipient();
+        printf("recipient: %s\n", recipient);
         string message = request.mutable_messagecommunication()->message();
+        printf("message: %s\n", message);
         string sender = request.mutable_messagecommunication()->sender();
+        printf("sender: %s\n", sender);
         // message = sender + " para " + recipient + ": " + message;
         if(recipient=="everyone"){
           broadcast(message, new_socket, sender);
