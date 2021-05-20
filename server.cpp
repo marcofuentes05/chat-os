@@ -122,7 +122,11 @@ void* threadFun( void *arg) {
   string tempBufferStr(tempBuffer);
   tempPetition.ParseFromString(tempBufferStr);
   string firstDebug = tempPetition.DebugString();
-  printf("debug: %s\n", string2charPointer(firstDebug));
+
+  char debugChar[firstDebug.size() + 1];
+  strcpy(debugChar, firstDebug.c_str());
+
+  printf("debug: %s\n", debugChar);
   if (tempPetition.option() == 1) {
     user newUser;
     newUser.name = tempPetition.mutable_registration()->username();
