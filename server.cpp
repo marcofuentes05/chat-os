@@ -74,7 +74,8 @@ void broadcast(string message, int senderSocket, string from) {
   response->set_code(200);
   responseMessage->set_message(message);
   responseMessage->set_recipient("everyone");
-  responseMessage->set_sender(string2charPointer(from));
+  responseMessage->set_sender(from);
+
   response->set_allocated_messagecommunication(responseMessage);
   string responseSerialized;
   response->SerializeToString(&responseSerialized);
@@ -94,7 +95,7 @@ int sendTo(string user, string message, string from) {
   response->set_code(200);
   responseMessage->set_message(message);
   responseMessage->set_recipient(user);
-  responseMessage->set_sender(string2charPointer(from));
+  responseMessage->set_sender(from);
   response->set_allocated_messagecommunication(responseMessage);
   string responseSerialized;
   response->SerializeToString(&responseSerialized);
@@ -140,7 +141,8 @@ void* threadFun( void *arg) {
     // Rechazar la conexión si el usuario ya existe
     if (!usernameAvailable(newUserName)){
       removeUser(newUserName, new_socket); //TODO REVISAR ESTE ORDEN
-      sendTo(new_socket, string2charPointer("ERROR - USUARIO EXISTENTE"));
+      char *err = "ERROR - USUARIO EXISTENTE";
+      sendTo(new_socket, err);
       pthread_mutex_lock(&mutex1);
       numConnections--;
       pool.push(thId);
@@ -165,7 +167,9 @@ void* threadFun( void *arg) {
       string bufferStr(buffer);
       request.ParseFromString(bufferStr);
       string debug = request.DebugString();
-      printf("%s\n", string2charPointer(debug));
+      char debugChar2[debug.size() + 1];
+      strcpy(debugChar2, debug.c_str());
+      printf("%s\n", debugChar2);
       int option = request.option();
       printf("RECEIVED OPTION: %u\n", option);
 
@@ -189,11 +193,8 @@ void* threadFun( void *arg) {
       }
       case 4:{
         string recipient = request.mutable_messagecommunication()->recipient();
-        printf("recipient: %s\n", string2charPointer(recipient));
         string message = request.mutable_messagecommunication()->message();
-        printf("message: %s\n", string2charPointer(message));
         string sender = request.mutable_messagecommunication()->sender();
-        printf("sender: %s\n", string2charPointer(sender));
         // message = sender + " para " + recipient + ": " + message;
         if(recipient=="everyone"){
           broadcast(message, new_socket, sender);
