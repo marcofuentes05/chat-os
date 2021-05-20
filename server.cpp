@@ -102,7 +102,7 @@ int sendTo(string user, string message, string from) {
   strcpy(tempBuffer, responseSerialized.c_str());
   for( auto usr: users) {
     if (usr.name == user && usr.socket != 0) {
-      send(usr.socket, tempBuffer, responseSerialized.size(), 0);
+      send(usr.socket, tempBuffer, responseSerialized.size()+1, 0);
       return 1;
     }
   }
@@ -149,11 +149,9 @@ void* threadFun( void *arg) {
     users.push_back(newUser);
     pthread_mutex_unlock(&mutex1);
     char buffer[BUFFER_SIZE] = {0};
-    for (;;)
-    {
+    for (;;) {
       int value = read(new_socket, buffer, BUFFER_SIZE);
-      if (buffer[0] == 0)
-      {
+      if (buffer[0] == 0) {
         break;
       }
 
@@ -168,26 +166,45 @@ void* threadFun( void *arg) {
       // option 3: Cambio de Estado
       // option 4: Mensajes
       // option 5: Informacion de un usuario en particular
-      switch (option)
-      {
+      switch (option) {
       case 1:
         printf("OPTION 1\n");
       case 2:
         printf("OPTION 2\n");
+
       case 3:
         printf("OPTION 3\n");
       case 4:
         chat::MessageCommunication messageRequest;
-        messageRequest = request.messagecommunication();
-        string recipient = messageRequest.recipient();
-        string message = messageRequest.message();
-        string sender = messageRequest.sender();
-        message = sender + " para " + recipient + ": " + message;
+        string recipient = request.mutable_messagecommunication()->recipient();
+        string message = request.mutable_messagecommunication()->message();
+        string sender = request.mutable_messagecommunication()->sender();
+        // message = sender + " para " + recipient + ": " + message;
         if(recipient=="everyone"){
-          broadcast(string2charPointer(message), new_socket, newUser.name);
+          broadcast(string2charPointer(message), new_socket, sender);
         } else {
-          sendTo(recipient, string2charPointer(message), newUser.name);
+          sendTo(recipient, string2charPointer(message), sender);
         }
+      case 5:
+        string user = request.mutable_users()->user();
+        chat::UserInfo *usrInfo = new chat::UserInfo();
+        chat::ServerResponse *response = new chat::ServerResponse();
+        response->set_option(5);
+        response->set_code(200);
+        usrInfo->set_username(user);
+        for (auto usr : users) {
+          if(usr.name == user) {
+            usrInfo->set_status(usr.status);
+            usrInfo->set_ip(usr.ip);
+            break;
+          }
+        }
+        response->set_allocated_userinforesponse(usrInfo);
+        response->set_servermessage("Todo bien");
+        string responseSerialized;
+        response->SerializeToString(&responseSerialized);
+        strcpy(buffer, responseSerialized.c_str());
+        send(new_socket, buffer, responseSerialized.size() + 1, 0);
       }
 
       // broadcast(buffer, newUser.socket, newUser.name);
