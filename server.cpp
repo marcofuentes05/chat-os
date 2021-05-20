@@ -196,6 +196,10 @@ void* threadFun( void *arg) {
             usrInfo->set_ip(usr.ip);
           }
           response->set_allocated_connectedusers(connectedUsers);
+          string responseSerialized;
+          response->SerializeToString(&responseSerialized);
+          strcpy(buffer, responseSerialized.c_str());
+          send(new_socket, buffer, responseSerialized.size() + 1, 0);
         }
         case 3:{
           printf("OPTION 3\n");
