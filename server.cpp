@@ -22,6 +22,8 @@ using namespace google::protobuf;
 struct user {
   string name;
   int socket;
+  string ip;
+  string status;
 };
 
 static int numConnections = 0;
@@ -29,6 +31,12 @@ static int numConnections = 0;
 static queue<pthread_t> pool;
 static vector<user> users;
 pthread_mutex_t mutex1 = PTHREAD_MUTEX_INITIALIZER;
+
+char* string2charPointer(string message) {
+  char debugChar[message.size() + 1];
+  strcpy(debugChar, message.c_str());
+  return debugChar;
+}
 
 void printUsers() {
   for(auto usr : users) {
@@ -59,7 +67,19 @@ bool usernameAvailable(char username[]) {
   return true;
 }
 
-void broadcast(char message[], int senderSocket) {
+void broadcast(char message[], int senderSocket, string from) {
+  chat::ServerResponse *response = new chat::ServerResponse();
+  chat::MessageCommunication *responseMessage = new chat::MessageCommunication();
+  response->set_option(4);
+  response->set_code(200);
+  responseMessage->set_message(message);
+  responseMessage->set_recipient("everyone");
+  responseMessage->set_sender(string2charPointer(from));
+  response->set_allocated_messagecommunication(responseMessage);
+  string responseSerialized;
+  response->SerializeToString(&responseSerialized);
+  char tempBuffer[BUFFER_SIZE] = {0};
+  strcpy(tempBuffer, responseSerialized.c_str());
   for(auto usr: users) {
     if (usr.socket != 0 && usr.socket != senderSocket) {
       send(usr.socket, message, strlen(message), 0);
@@ -67,10 +87,22 @@ void broadcast(char message[], int senderSocket) {
   }
 }
 
-int sendTo(string user, char message[]) {
+int sendTo(string user, string message, string from) {
+  chat::ServerResponse *response = new chat::ServerResponse();
+  chat::MessageCommunication *responseMessage = new chat::MessageCommunication();
+  response->set_option(4);
+  response->set_code(200);
+  responseMessage->set_message(message);
+  responseMessage->set_recipient(user);
+  responseMessage->set_sender(string2charPointer(from));
+  response->set_allocated_messagecommunication(responseMessage);
+  string responseSerialized;
+  response->SerializeToString(&responseSerialized);
+  char tempBuffer[BUFFER_SIZE] = {0};
+  strcpy(tempBuffer, responseSerialized.c_str());
   for( auto usr: users) {
     if (usr.name == user && usr.socket != 0) {
-      send(usr.socket, message, strlen(message), 0);
+      send(usr.socket, tempBuffer, responseSerialized.size(), 0);
       return 1;
     }
   }
@@ -84,18 +116,95 @@ void sendTo(int socket, char message[]) {
 void* threadFun( void *arg) {
   pthread_t thId = pthread_self();
   int new_socket = *((int *)(&arg));
-  user newUser;
-  newUser.socket = new_socket;
-  newUser.name = "test"; // del protocolo
+  char tempBuffer[BUFFER_SIZE] = {0};
+  int tempValue = read(new_socket, tempBuffer, BUFFER_SIZE);
+  chat::ClientPetition tempPetition;
+  string tempBufferStr(tempBuffer);
+  tempPetition.ParseFromString(tempBufferStr);
+  if (tempPetition.option() == 1) {
+    user newUser;
+    newUser.name = tempPetition.mutable_registration()->username();
+    newUser.socket = new_socket;
+    newUser.ip = tempPetition.mutable_registration()->ip();
+    newUser.status = "Disponible";
+    // De string a char[]
+    char newUserName[newUser.name.length() + 1];
+    strcpy(newUserName, newUser.name.c_str());
 
-  // De string a char[]
-  char newUserName[newUser.name.length() + 1];
-  strcpy(newUserName, newUser.name.c_str());
+    // Rechazar la conexión si el usuario ya existe
+    if (!usernameAvailable(newUserName)){
+      removeUser(newUserName, new_socket); //TODO REVISAR ESTE ORDEN
+      sendTo(new_socket, "ERROR - USUARIO EXISTENTE");
+      pthread_mutex_lock(&mutex1);
+      numConnections--;
+      pool.push(thId);
+      pthread_mutex_unlock(&mutex1);
+      printf("Closing socket %d...\n", new_socket);
+      close(new_socket);
+      printf("Socket %d gone\n", new_socket);
+      pthread_exit(NULL);
+    }
 
-  // Rechazar la conexión si el usuario ya existe
-  if (!usernameAvailable(newUserName)){
-    removeUser(newUserName, new_socket); //TODO REVISAR ESTE ORDEN
-    sendTo(new_socket, "ERROR - USUARIO EXISTENTE");
+    pthread_mutex_lock(&mutex1);
+    users.push_back(newUser);
+    pthread_mutex_unlock(&mutex1);
+    char buffer[BUFFER_SIZE] = {0};
+    for (;;)
+    {
+      int value = read(new_socket, buffer, BUFFER_SIZE);
+      if (buffer[0] == 0)
+      {
+        break;
+      }
+
+      chat::ClientPetition request;
+      string bufferStr(buffer);
+      request.ParseFromString(bufferStr);
+      int option = request.option();
+      printf("RECEIVED OPTION: %u\n", option);
+
+      // option 1: Registro de Usuarios
+      // option 2: Usuarios Conectados
+      // option 3: Cambio de Estado
+      // option 4: Mensajes
+      // option 5: Informacion de un usuario en particular
+      switch (option)
+      {
+      case 1:
+        printf("OPTION 1\n");
+      case 2:
+        printf("OPTION 2\n");
+      case 3:
+        printf("OPTION 3\n");
+      case 4:
+        chat::MessageCommunication messageRequest;
+        messageRequest = request.messagecommunication();
+        string recipient = messageRequest.recipient();
+        string message = messageRequest.message();
+        string sender = messageRequest.sender();
+        message = sender + " para " + recipient + ": " + message;
+        if(recipient=="everyone"){
+          broadcast(string2charPointer(message), new_socket, newUser.name);
+        } else {
+          sendTo(recipient, string2charPointer(message), newUser.name);
+        }
+      }
+
+      // broadcast(buffer, newUser.socket, newUser.name);
+      // Clear buffer
+      memset(buffer, 0, BUFFER_SIZE);
+    }
+    pthread_mutex_lock(&mutex1);
+    numConnections--;
+
+    removeUser(newUserName, new_socket);
+    pool.push(thId);
+    pthread_mutex_unlock(&mutex1);
+    printf("Closing socket %d...\n", new_socket);
+    close(new_socket);
+    printf("Socket %d gone\n", new_socket);
+    pthread_exit(NULL);
+  } else {
     pthread_mutex_lock(&mutex1);
     numConnections--;
     pool.push(thId);
@@ -105,46 +214,6 @@ void* threadFun( void *arg) {
     printf("Socket %d gone\n", new_socket);
     pthread_exit(NULL);
   }
-  
-  pthread_mutex_lock(&mutex1);
-  users.push_back(newUser);
-  pthread_mutex_unlock(&mutex1);
-  char buffer[BUFFER_SIZE] = {0};
-  for (;;) {
-    int value = read(new_socket, buffer, BUFFER_SIZE);
-    if (buffer[0] == 0) {
-      break;
-    }
-
-    chat::ClientPetition request;
-    string bufferStr(buffer);
-    request.ParseFromString(bufferStr);
-    string debug = request.DebugString();
-    char debugChar[debug.size() + 1];
-    strcpy(debugChar, debug.c_str());
-//    printf("RECEIVED CODE: %d ",request.code());
-    printf("RECEIVED OPTION: %u\n", request.option());
-    printf("debug: {\n%s\n}",debugChar);
-
-    printf("Socket ID: %d\t%s\n", new_socket, buffer);
-    broadcast(buffer, newUser.socket);
-    // Clear buffer
-    memset(buffer, 0, BUFFER_SIZE);
-  }
-  pthread_mutex_lock(&mutex1);
-  numConnections--;
-  // for(int i = 0 ; i < users.size(); i++) {
-  //   if (users.at(i).socket == new_socket) {
-  //     users.at(i).socket = 0;
-  //   }
-  // }
-  removeUser(newUserName, new_socket);
-  pool.push(thId);
-  pthread_mutex_unlock(&mutex1);
-  printf("Closing socket %d...\n", new_socket);
-  close(new_socket);
-  printf("Socket %d gone\n", new_socket);
-  pthread_exit(NULL);
 }
 
 int main(int argc, char const *argv[]) {
