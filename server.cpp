@@ -179,62 +179,87 @@ void* threadFun( void *arg) {
       // option 4: Mensajes
       // option 5: Informacion de un usuario en particular
       switch (option) {
-      case 1:{
-        printf("OPTION 1\n");
-        break;
-      }
-      case 2:{
-        printf("OPTION 2\n");
-        break;
-      }
-      case 3:{
-        printf("OPTION 3\n");
-        break;
-      }
-      case 4:{
-        string recipient = request.mutable_messagecommunication()->recipient();
-        string message = request.mutable_messagecommunication()->message();
-        string sender = request.mutable_messagecommunication()->sender();
-        // message = sender + " para " + recipient + ": " + message;
-        if(recipient=="everyone"){
-          broadcast(message, new_socket, sender);
-        } else {
-          int indicator = sendTo(recipient, message, sender);
-          if (indicator == 0) {
-            chat::ServerResponse *response = new chat::ServerResponse();
-            response->set_code(500);
-            response->set_servermessage("Usuario inexistente");
-            string responseSerialized;
-            response->SerializeToString(&responseSerialized);
-            char tempBuffer[BUFFER_SIZE] = {0};
-            strcpy(tempBuffer, responseSerialized.c_str());
-            send(new_socket, tempBuffer, responseSerialized.size() + 1, 0);
-          }
+        case 1:{
+          printf("OPTION 1\n");
+          // Se supone que esta ya nunca se ejecutará porque ya se ejecutó antes.
         }
-        break;
-      }
-      case 5:{
-        string user = request.mutable_users()->user();
-        chat::UserInfo *usrInfo = new chat::UserInfo();
-        chat::ServerResponse *response = new chat::ServerResponse();
-        response->set_option(5);
-        response->set_code(200);
-        usrInfo->set_username(user);
-        for (auto usr : users) {
-          if(usr.name == user) {
+        case 2:{
+          printf("OPTION 2\n");
+          chat::ServerResponse *response = new chat::ServerResponse();
+          response->set_option(2);
+          response->set_code(200);
+          response->set_servermessage("Llega lista de usuarios");
+          chat::ConnectedUsersResponse *connectedUsers = new chat::ConnectedUsersResponse();
+          for(auto usr : users) {
+            chat::UserInfo *usrInfo = connectedUsers->add_connectedusers();
+            usrInfo->set_username(usr.name);
             usrInfo->set_status(usr.status);
             usrInfo->set_ip(usr.ip);
-            break;
+          }
+          response->set_allocated_connectedusers(connectedUsers);
+        }
+        case 3:{
+          printf("OPTION 3\n");
+          string username = request.mutable_change()->username();
+          string status = request.mutable_change()->status();
+          for(auto usr : users) {
+            if (usr.name == username) {
+              pthread_mutex_lock(&mutex1);
+              usr.status = status;
+              pthread_mutex_unlock(&mutex1);
+            }
+          }
+          chat::ServerResponse *response = new chat::ServerResponse();
+          response->set_option(3);
+          response->set_code(200);
+          response->set_servermessage("Cambio de estado exitoso");
+          string responseSerialized;
+          response->SerializeToString(&responseSerialized);
+          strcpy(buffer, responseSerialized.c_str());
+          send(new_socket, buffer, responseSerialized.size() + 1, 0);
+        }
+        case 4:{
+          string recipient = request.mutable_messagecommunication()->recipient();
+          string message = request.mutable_messagecommunication()->message();
+          string sender = request.mutable_messagecommunication()->sender();
+          // message = sender + " para " + recipient + ": " + message;
+          if(recipient=="everyone"){
+            broadcast(message, new_socket, sender);
+          } else {
+            int indicator = sendTo(recipient, message, sender);
+            if (indicator == 0) {
+              chat::ServerResponse *response = new chat::ServerResponse();
+              response->set_code(500);
+              response->set_servermessage("Usuario inexistente");
+              string responseSerialized;
+              response->SerializeToString(&responseSerialized);
+              char tempBuffer[BUFFER_SIZE] = {0};
+              strcpy(tempBuffer, responseSerialized.c_str());
+              send(new_socket, tempBuffer, responseSerialized.size() + 1, 0);
+            }
           }
         }
-        response->set_allocated_userinforesponse(usrInfo);
-        response->set_servermessage("Todo bien");
-        string responseSerialized;
-        response->SerializeToString(&responseSerialized);
-        strcpy(buffer, responseSerialized.c_str());
-        send(new_socket, buffer, responseSerialized.size() + 1, 0);
-        break;
-      }
+        case 5:{
+          string user = request.mutable_users()->user();
+          chat::UserInfo *usrInfo = new chat::UserInfo();
+          chat::ServerResponse *response = new chat::ServerResponse();
+          response->set_option(5);
+          response->set_code(200);
+          usrInfo->set_username(user);
+          for (auto usr : users) {
+            if(usr.name == user) {
+              usrInfo->set_status(usr.status);
+              usrInfo->set_ip(usr.ip);
+              break;
+            }
+          }
+          response->set_allocated_userinforesponse(usrInfo);
+          response->set_servermessage("Todo bien");
+          string responseSerialized;
+          response->SerializeToString(&responseSerialized);
+          strcpy(buffer, responseSerialized.c_str());
+          send(new_socket, buffer, responseSerialized.size() + 1, 0);
+        }
       }
 
       // broadcast(buffer, newUser.socket, newUser.name);
