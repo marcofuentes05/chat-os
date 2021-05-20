@@ -134,7 +134,7 @@ void* threadFun( void *arg) {
     // Rechazar la conexión si el usuario ya existe
     if (!usernameAvailable(newUserName)){
       removeUser(newUserName, new_socket); //TODO REVISAR ESTE ORDEN
-      sendTo(new_socket, "ERROR - USUARIO EXISTENTE");
+      sendTo(new_socket, string2charPointer("ERROR - USUARIO EXISTENTE"));
       pthread_mutex_lock(&mutex1);
       numConnections--;
       pool.push(thId);
