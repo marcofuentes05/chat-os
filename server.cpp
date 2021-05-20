@@ -67,7 +67,7 @@ bool usernameAvailable(char username[]) {
   return true;
 }
 
-void broadcast(char message[], int senderSocket, string from) {
+void broadcast(string message, int senderSocket, string from) {
   chat::ServerResponse *response = new chat::ServerResponse();
   chat::MessageCommunication *responseMessage = new chat::MessageCommunication();
   response->set_option(4);
@@ -82,7 +82,7 @@ void broadcast(char message[], int senderSocket, string from) {
   strcpy(tempBuffer, responseSerialized.c_str());
   for(auto usr: users) {
     if (usr.socket != 0 && usr.socket != senderSocket) {
-      send(usr.socket, message, strlen(message), 0);
+      send(usr.socket, tempBuffer, responseSerialized.size() + 1, 0);
     }
   }
 }
@@ -186,9 +186,9 @@ void* threadFun( void *arg) {
         string sender = request.mutable_messagecommunication()->sender();
         // message = sender + " para " + recipient + ": " + message;
         if(recipient=="everyone"){
-          broadcast(string2charPointer(message), new_socket, sender);
+          broadcast(message, new_socket, sender);
         } else {
-          sendTo(recipient, string2charPointer(message), sender);
+          sendTo(recipient, message, sender);
         }
         break;
       }
