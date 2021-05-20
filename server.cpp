@@ -123,8 +123,8 @@ void* threadFun( void *arg) {
     char debugChar[debug.size() + 1];
     strcpy(debugChar, debug.c_str());
 //    printf("RECEIVED CODE: %d ",request.code());
-    printf("RECEIVED OPTION: %d", request.option());
-    printf("%s\n",debug);
+    printf("RECEIVED OPTION: %u\n", request.option());
+    printf("debug: {\n%s\n}",debugChar);
 
     printf("Socket ID: %d\t%s\n", new_socket, buffer);
     broadcast(buffer, newUser.socket);
