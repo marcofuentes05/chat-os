@@ -158,6 +158,8 @@ void* threadFun( void *arg) {
       chat::ClientPetition request;
       string bufferStr(buffer);
       request.ParseFromString(bufferStr);
+      string debug = request.DebugString();
+      printf("%s", string2charPointer(debug));
       int option = request.option();
       printf("RECEIVED OPTION: %u\n", option);
 
