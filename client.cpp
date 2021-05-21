@@ -245,11 +245,11 @@ void* recieve_msg_handler(void* arg){
           }
         } else {
           
-          printf(ANSI_COLOR_RED"SOMETHINGS WRONG I CAN FEEL IT\n " ANSI_COLOR_RESET);
+          printf(ANSI_COLOR_RED"Error de credenciales\n " ANSI_COLOR_RESET);
         }
         tempmessage = "";
       } else if (receive == 0){
-        break;
+        exit(0);
       }
       else{
         printf(ANSI_COLOR_RED"ERROR RECEIVING DATA FROM SERVER\n " ANSI_COLOR_RESET);
@@ -273,11 +273,7 @@ int main(int argc, char *argv[]) {
   string petitionserializer;
   char regbuffer[LENGTH] = {};
   
-  //data used to get the ip of the client
-  char host[256];
-  char *clientIP;
-  struct hostent *host_entry;
-  int hostname;
+  
 
   struct sockaddr_in serv_addr;
   if ((sock = socket(AF_INET, SOCK_STREAM, 0)) < 0) {
@@ -296,8 +292,14 @@ int main(int argc, char *argv[]) {
 
   if (connect(sock, (struct sockaddr *)&serv_addr, sizeof(serv_addr)) < 0) {
     printf("\nConnection Failed \n");
+    printf("%s\n", strerror(errno));
     return -1;
   }
+  //data used to get the ip of the client
+  char host[256];
+  char *clientIP;
+  struct hostent *host_entry;
+  int hostname;
   //getting the data to send the register pettition
   hostname = gethostname(host, sizeof(host));
   host_entry= gethostbyname(host);
@@ -326,7 +328,7 @@ int main(int argc, char *argv[]) {
   printf(ANSI_COLOR_RED"Los errores del servidor se imprimiran en este color\n " ANSI_COLOR_RESET);
   printf("\n");
   printf(ANSI_COLOR_GREEN"Los comandos disponibles son:\n/changestate <estado>: para cambiar a los estados activo, inactivo, ocupado\n/users: para obtener todos los usuarios conectados\n/userinfo <user>: para obtener la informacion de un usuario\n@<nombre de usuario> para enviar un mensaje directo\n/help para imprimir este menu\n " ANSI_COLOR_RESET);
-
+  printf("\n");
   
   pthread_t send_msg_thread;
   int send_msg_thread_success; 
