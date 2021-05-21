@@ -207,13 +207,13 @@ void* threadFun( void *arg) {
           printf("OPTION 3\n");
           string username = request.mutable_change()->username();
           string status = request.mutable_change()->status();
-          for(auto usr : users) {
-            if (usr.name == username) {
-              printf("i usr.status=%s\n", usr.status);
+          for (int i = 0 ; i < users.size(); i++){
+            
+          // for(auto usr : users) {
+            if (users.at(i).name == username) {
               pthread_mutex_lock(&mutex1);
-              usr.status = status;
+              users.at(i).status = status;
               pthread_mutex_unlock(&mutex1);
-              printf("f usr.status=%s\n", usr.status);
             }
           }
           chat::ServerResponse *response = new chat::ServerResponse();
