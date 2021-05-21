@@ -2,6 +2,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <unistd.h>
+#include <netdb.h>
 #include <sys/types.h>
 #include <sys/socket.h>
 #include <netinet/in.h>
@@ -79,7 +80,7 @@ void* send_msg_handler(void* arg){
 
         //fill the client petition protocol
         chat::ClientPetition *petition = new chat::ClientPetition();
-        petition->set_option(2);
+        petition->set_option(5);
         petition->set_allocated_users(inforequest);
         petition->SerializeToString(&petitionserializer);
         strcpy(buffer,petitionserializer.c_str());
@@ -271,6 +272,12 @@ int main(int argc, char *argv[]) {
   int serverPort = atoi(argv[3]);
   string petitionserializer;
   char regbuffer[LENGTH] = {};
+  
+  //data used to get the ip of the client
+  char host[256];
+  char *clientIP;
+  struct hostent *host_entry;
+  int hostname;
 
   struct sockaddr_in serv_addr;
   if ((sock = socket(AF_INET, SOCK_STREAM, 0)) < 0) {
@@ -291,12 +298,16 @@ int main(int argc, char *argv[]) {
     printf("\nConnection Failed \n");
     return -1;
   }
+  //getting the data to send the register pettition
+  hostname = gethostname(host, sizeof(host));
+  host_entry= gethostbyname(host);
+  clientIP = inet_ntoa(*((struct in_addr*) host_entry->h_addr_list[0]));
 
   //send the register petition
   chat::ClientPetition *petition = new chat::ClientPetition();
   chat::UserRegistration *reg = new chat::UserRegistration();
   reg->set_username(name);
-  reg->set_ip(serverIP);
+  reg->set_ip(clientIP);
 
   petition->set_option(1);
   petition->set_allocated_registration(reg);
