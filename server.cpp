@@ -109,6 +109,7 @@ int sendErrorTo(int socket, string user, string message, string from) {
   chat::MessageCommunication *responseMessage = new chat::MessageCommunication();
   response->set_option(4);
   response->set_code(500);
+  response->set_servermessage("Usuario ya existe con ese nombre");
   responseMessage->set_message(message);
   responseMessage->set_recipient(user);
   responseMessage->set_sender(from);
