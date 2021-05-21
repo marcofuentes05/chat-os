@@ -104,8 +104,26 @@ int sendTo(string user, string message, string from) {
   return 0;
 }
 
-void sendTo(int socket, char message[]) {
-  send(socket, message, strlen(message), 0);
+int sendErrorTo(int socket, string user, string message, string from) {
+  chat::ServerResponse *response = new chat::ServerResponse();
+  chat::MessageCommunication *responseMessage = new chat::MessageCommunication();
+  response->set_option(4);
+  response->set_code(500);
+  responseMessage->set_message(message);
+  responseMessage->set_recipient(user);
+  responseMessage->set_sender(from);
+  response->set_allocated_messagecommunication(responseMessage);
+  string responseSerialized;
+  response->SerializeToString(&responseSerialized);
+  char tempBuffer[BUFFER_SIZE] = {0};
+  strcpy(tempBuffer, responseSerialized.c_str());
+  for( auto usr: users) {
+    if (usr.name == user && usr.socket != 0) {
+      send(usr.socket, tempBuffer, responseSerialized.size()+1, 0);
+      return 1;
+    }
+  }
+  return 0;
 }
 
 void* threadFun( void *arg) {
@@ -140,8 +158,8 @@ void* threadFun( void *arg) {
       char errChar[err.size() + 1];
       strcpy(errChar, err.c_str());
 
-
-      sendTo(new_socket, errChar);
+      string from = "SERVIDOR";
+      sendErrorTo(new_socket, newUser.name, errChar, from);
       pthread_mutex_lock(&mutex1);
       numConnections--;
       pool.push(thId);
