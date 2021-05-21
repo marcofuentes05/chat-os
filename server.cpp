@@ -117,13 +117,8 @@ int sendErrorTo(int socket, string user, string message, string from) {
   response->SerializeToString(&responseSerialized);
   char tempBuffer[BUFFER_SIZE] = {0};
   strcpy(tempBuffer, responseSerialized.c_str());
-  for( auto usr: users) {
-    if (usr.name == user && usr.socket != 0) {
-      send(usr.socket, tempBuffer, responseSerialized.size()+1, 0);
-      return 1;
-    }
-  }
-  return 0;
+  send(socket, tempBuffer, responseSerialized.size()+1, 0);
+  return 1;
 }
 
 void* threadFun( void *arg) {
