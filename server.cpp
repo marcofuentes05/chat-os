@@ -181,6 +181,7 @@ void* threadFun( void *arg) {
         case 1:{
           printf("OPTION 1\n");
           // Se supone que esta ya nunca se ejecutará porque ya se ejecutó antes.
+          break;
         }
         case 2:{
           printf("OPTION 2\n");
@@ -200,6 +201,7 @@ void* threadFun( void *arg) {
           response->SerializeToString(&responseSerialized);
           strcpy(buffer, responseSerialized.c_str());
           send(new_socket, buffer, responseSerialized.size() + 1, 0);
+          break;
         }
         case 3:{
           printf("OPTION 3\n");
@@ -207,9 +209,11 @@ void* threadFun( void *arg) {
           string status = request.mutable_change()->status();
           for(auto usr : users) {
             if (usr.name == username) {
+              printf("i usr.status=%s\n", usr.status);
               pthread_mutex_lock(&mutex1);
               usr.status = status;
               pthread_mutex_unlock(&mutex1);
+              printf("f usr.status=%s\n", usr.status);
             }
           }
           chat::ServerResponse *response = new chat::ServerResponse();
@@ -220,6 +224,7 @@ void* threadFun( void *arg) {
           response->SerializeToString(&responseSerialized);
           strcpy(buffer, responseSerialized.c_str());
           send(new_socket, buffer, responseSerialized.size() + 1, 0);
+          break;
         }
         case 4:{
           string recipient = request.mutable_messagecommunication()->recipient();
@@ -241,6 +246,7 @@ void* threadFun( void *arg) {
               send(new_socket, tempBuffer, responseSerialized.size() + 1, 0);
             }
           }
+          break;
         }
         case 5:{
           string user = request.mutable_users()->user();
@@ -262,6 +268,7 @@ void* threadFun( void *arg) {
           response->SerializeToString(&responseSerialized);
           strcpy(buffer, responseSerialized.c_str());
           send(new_socket, buffer, responseSerialized.size() + 1, 0);
+          break;
         }
       }
 
